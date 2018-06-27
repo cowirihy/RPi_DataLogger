@@ -4,7 +4,9 @@ Created on Mon Jun 18 10:39:43 2018
 
 @author: ARIR
 """
-
+from datetime import datetime
+import numpy as np
+import os
 
 class AcquisitionSystem:
     """
@@ -80,6 +82,11 @@ class AcquisitionSystem:
             self.foundData[channelNum + 1] = self.channels[channelNum].getData()
         self.foundData[0] = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
     
+    def file_Complete(self):
+        
+        old_name = self.fileName
+        new_name = old_name[:-4] + '_Completed.csv'
+        os.rename(old_name,new_name)
     
 class Channel:
     """
@@ -101,7 +108,11 @@ class Channel:
 
 #%% Main loops for getting data from the channels
 
-def runAcquisition(tick_obj, fileReady_obj, AcqSys, maxCacheSize:float=20):
+def runAcquisition(tick_obj, 
+                   fileReady_obj, 
+                   AcqSys,
+                   tick_timeout,
+                   maxCacheSize:float=20):
     """
     Start an acquisitionSystem object AcqSys and creates a new file for this 
     to store data in. After an event (tick_obj) the system takes and saves a 
@@ -111,10 +122,10 @@ def runAcquisition(tick_obj, fileReady_obj, AcqSys, maxCacheSize:float=20):
     method ends.   
     """
     
-    while not tick_obj.isSet():
+    while not tick_timeout.isSet():
         AcqSys.createFile()
         
-        while (AcqSys.numInFile < maxCacheSize) and (not tick_obj.isSet()):
+        while (AcqSys.numInFile < maxCacheSize) and (not tick_timeout.isSet()):
     
             tick_obj.wait()
             tick_obj.clear()
@@ -122,12 +133,14 @@ def runAcquisition(tick_obj, fileReady_obj, AcqSys, maxCacheSize:float=20):
             AcqSys.getDataAllChannels()
             AcqSys.saveData()
         
+        AcqSys.file_Complete()
         fileReady_obj.set()
-        print("Acqusition System: File completed")
-        #############   sends a signal to pre-processor thread
         
+        print("Acqusition System: File completed")
+    print('Acqusition System: Finished')
+    
 def list_to_string(myList,delimiter=','):
-    return delimiter.join(map(str, myList)) 
+    return delimiter.join(map(str, myList))
 
 def write_line(file,str_line):
     file.write(str_line + '\n')
