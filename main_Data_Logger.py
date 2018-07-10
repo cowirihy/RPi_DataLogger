@@ -8,19 +8,33 @@ Main Data Logger thread:
     with a timeout of 10s
     Currently only runs a ticker thread and acquisition 19/6/2018
 """
-import randomNum
+import DataGetFunc as dataGetFunc
 from ticker_example import ticker
 import threading
-import acquisitionSystem as acqSys
+import AcquisitionSystem as acqSys
 import pre_processor as prePro
+import RTIMU
 
 #%% start of main code
 
 #### Inputs
-samplingFunctions = [randomNum.randomNum, randomNum.randomNum] 
+s = RTIMU.Settings('RTIMU_settings')
+imu = RTIMU.RTIMU(s) 
+print("IMU Name: " + imu.IMUName()) 
+
+if (not imu.IMUInit()): 
+    print("IMU Init Failed!!!!")
+else: 
+    print("IMU Init Succeeded");
+
+reader = dataGetFunc.AccelReader(imu)
+    
+samplingFunctions = [lambda :reader.x_accel_take(fetch_new_data = True), 
+                     lambda :reader.y_accel_take(),
+                     lambda :reader.z_accel_take()] 
 maxCacheSize = 1000.0 
-fs = 100.0; T = 1/fs
-timeOut = 60.0
+fs = 24; T = 1/fs
+timeOut = 10.0
 
 def addition_1(xx):
     yy = xx + 1
@@ -30,8 +44,10 @@ def subtract_1(xx):
     yy = xx - 1
     return yy
 
+def do_nothing(xx):
+    return xx
 
-pre_process_func = [[addition_1,addition_1,addition_1],[subtract_1]]
+pre_process_func = [[do_nothing],[do_nothing],[do_nothing]]
 layover_size = 20
 
 #Creates an AcquisitionSystem 
@@ -42,7 +58,7 @@ PrePross = prePro.PreProcessor(pre_process_func, layover_size=layover_size)
 
 #Creates events
 eventGoGetData = threading.Event()
-eventFileReady = threading.Event() #Does not yet do anything
+eventFileReady = threading.Event() 
 event_ticker_timeout = threading.Event()
 
 #Define and start threads

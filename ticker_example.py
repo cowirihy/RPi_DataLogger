@@ -65,6 +65,7 @@ if __name__ == '__main__':
                                      args=(e,),
                                      kwargs={'timeout':15.0,'T':0.5})
     ticker_thread.start()
+
     
     # Define a second processing thread
     proc_thread = threading.Thread(name='processing', 
