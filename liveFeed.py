@@ -64,6 +64,7 @@ class LiveFeed():
 class GroupFigs():
     def __init__(self, new_data, fig_len, selected_channels, draw_func):
         self.held_data = RingBuffer(new_data, fig_len)
+        print(new_data)
         self.group_figures = {None:None}
         self.selected_channels = selected_channels
         for channel in selected_channels:
@@ -95,9 +96,7 @@ class RingBuffer():
             self.buffer = data
             if data.shape[0] > max_length:
                 print('Warning: Initial data too large, some data disgarded')
-                self.buffer = self.buffer.drop(
-                        self.buffer.index[0:(data.shape[0]-max_length)], 
-                        inplace = True)
+                self.buffer = self.buffer.iloc[:,-max_length:]
         else:
             print('Warning: Setup failed as initial data not Pandas DataFrame')
     
@@ -136,11 +135,16 @@ class LiveFig():
     def destroy_fig(self):
         plt.clear(self.fig)
 
+import datetime
+
 def line_chart(data, fig, ax):
     
     ax.cla()
     x = data[0][:]
     y = data[1][:]
+    
+    x = np.linspace(0,100,len(x))
+    
     ax.plot(x, y, 'k')
     fig.canvas.draw()
     fig.canvas.flush_events()

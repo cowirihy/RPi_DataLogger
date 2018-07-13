@@ -145,7 +145,8 @@ class PreProcessor():
         self.save_data_func(file_name,self.timestamps, self.processed_data, self.channel_strs)
         os.remove(self.completed_files[0])
     
-    def update_display(self):  
+    def update_display(self):
+            print('here')
             self.LiveFeed1.update_figures(self.timestamps,self.data,self.processed_data,self.first_run)  
             self.first_run = False 
 
