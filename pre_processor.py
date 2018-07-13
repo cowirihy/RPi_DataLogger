@@ -9,7 +9,7 @@ import os
 import numpy as np
 import pandas as pd
 import time
-
+import liveFeed
 #%%
 
 def default_load(file_name):
@@ -33,8 +33,17 @@ def default_save(file_name, timestamps, data, col_titles):
 
 class PreProcessor():
     
-    def __init__(self,process_funcs, load_data_func=default_load, save_data_func=default_save , layover_size = 20,  
-                 new_file_location = None, key_word = "Completed"):
+    def __init__(self,process_funcs,  
+                 draw_function,   
+                 dsp_raw_channels,   
+                 dsp_processed_channels,  
+                 load_data_func=default_load,   
+                 save_data_func=default_save,   
+                 fig_x_len = 50,   
+                 layover_size = 20,    
+                 new_file_location = None,   
+                 key_word = "Completed"): 
+
         
         self.data = np.array(None)
         self.process_funcs = process_funcs
@@ -49,7 +58,13 @@ class PreProcessor():
         self.channel_strs = [None]*self.max_channel_num
         
         for channel_num in range(0,len(self.process_funcs)):
-            self.channel_strs[channel_num] = 'Ch' + str(channel_num) 
+            self.channel_strs[channel_num] = 'Ch' + str(channel_num)
+            
+        self.LiveFeed1 = liveFeed.LiveFeed(self.channel_strs,   
+                                           fig_x_len,  
+                                           raw_data_channels = dsp_raw_channels,   
+                                           processed_data_channels = dsp_processed_channels) 
+
     
     def check_files(self):
         file_names = os.listdir(self.acquisition_folder)
@@ -59,15 +74,14 @@ class PreProcessor():
     
     def process_data(self):
         
-        
-        
         for channel_num in range(0,self.max_channel_num):
             raw_processed_data = self.data[:,channel_num]
             for process_num in range(0,len(self.process_funcs[channel_num])):
                 
                 if self.first_run == True:
                     # First file so no layover data can be added or deleted.
-                    raw_processed_data = self.process_funcs[channel_num][process_num](raw_processed_data)
+                    raw_processed_data = self.process_funcs[
+                            channel_num][process_num](raw_processed_data)
                 
                 else:
                     if (process_num >= len(self.process_funcs[channel_num]) - 1) and (process_num == 0):
@@ -109,7 +123,6 @@ class PreProcessor():
                               Error applying process function e.g. filter')
                         
             self.processed_data[:,channel_num] = raw_processed_data
-        self.first_run = False
     
     def load_files(self):
         
@@ -132,6 +145,10 @@ class PreProcessor():
         self.save_data_func(file_name,self.timestamps, self.processed_data, self.channel_strs)
         os.remove(self.completed_files[0])
     
+    def update_display(self):  
+            self.LiveFeed1.update_figures(self.timestamps,self.data,self.processed_data,self.first_run)  
+            self.first_run = False 
+
     
 #%%    
 
@@ -150,6 +167,7 @@ def run_pre_processor(PreProcessor1, file_ready_obj, tick_timeout, timeout=120):
             PreProcessor1.load_files()
             PreProcessor1.process_data()
             PreProcessor1.save_files()
+            PreProcessor1.update_display()
             print('Processor: file processed and saved')
             PreProcessor1.check_files()
             if current_t > timeout:
@@ -173,10 +191,15 @@ if __name__ == "__main__":
         yy = xx - 1
         return yy
     
-    PreProcessor1 = PreProcessor(process_funcs = [[addition_1,
-                                                   addition_1,
-                                                   addition_1],
-                                                    [subtract_1]],
+    process_funcs = [[addition_1, addition_1, addition_1],[subtract_1]]  
+    draw_function={'Ch1':liveFeed.line_chart,'Ch2':liveFeed.line_chart}  
+    dsp_raw_channels = list(draw_function.keys())  
+    dsp_processed_channels = list(draw_function.keys())  
+      
+    PreProcessor1 = PreProcessor(process_funcs,  
+                                draw_function,  
+                                dsp_raw_channels,  
+                                dsp_processed_channels, 
                                 layover_size = 3)
     
    
@@ -187,3 +210,4 @@ if __name__ == "__main__":
         PreProcessor1.process_data()
         print(PreProcessor1.processed_data)
         PreProcessor1.save_files()
+        PreProcessor1.update_display()

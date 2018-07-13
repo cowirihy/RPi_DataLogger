@@ -14,7 +14,7 @@ import threading
 import AcquisitionSystem as acqSys
 import pre_processor as prePro
 import RTIMU
-
+import liveFeed
 #%% start of main code
 
 #### Inputs
@@ -36,6 +36,15 @@ maxCacheSize = 1000.0
 fs = 24; T = 1/fs
 timeOut = 10.0
 
+draw_funcs = {'Ch0':liveFeed.line_chart,  
+              'Ch1':liveFeed.line_chart,  
+              'Ch2':liveFeed.line_chart}  
+   
+dsp_raw_channels = []  
+dsp_processed_channels = ['Ch0','Ch1'] 
+
+
+
 def addition_1(xx):
     yy = xx + 1
     return yy
@@ -54,7 +63,12 @@ layover_size = 20
 ASys = acqSys.AcquisitionSystem(samplingFunctions)
 
 #Creates a PreProcessor
-PrePross = prePro.PreProcessor(pre_process_func, layover_size=layover_size)
+PrePross = prePro.PreProcessor(pre_process_func,   
+                               draw_funcs,   
+                               dsp_raw_channels,   
+                               dsp_processed_channels,   
+                               layover_size=layover_size) 
+
 
 #Creates events
 eventGoGetData = threading.Event()
