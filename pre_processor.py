@@ -73,7 +73,15 @@ class PreProcessor():
         
     
     def process_data(self):
+        """
+        Process the data using the functions defined
         
+        Different processes can be applied in series and different processes 
+        can be applied to different channels. Due to the layover data different 
+        code runs dependant on it being the first, last or middling runs. Also 
+        if it is the first, last or 
+        further code runs if a file is the first and last to allow    
+        """
         for channel_num in range(0,self.max_channel_num):
             raw_processed_data = self.data[:,channel_num]
             for process_num in range(0,len(self.process_funcs[channel_num])):
@@ -125,7 +133,12 @@ class PreProcessor():
             self.processed_data[:,channel_num] = raw_processed_data
     
     def load_files(self):
+        """
+        Loads the raw files using the function defined in load_data_func.
         
+        Loads the files into data and adds the specified amount of old data 
+        into layover.
+        """
         
         if self.first_run == True:
             # Can't add layover data as this is the first file
@@ -139,21 +152,49 @@ class PreProcessor():
 
 
     def save_files(self):
-        
+        """
+        Save the data to file and delete the original data.
+        """
         
         file_name = self.completed_files[0][:-13] + 'Processed.csv'
-        self.save_data_func(file_name,self.timestamps, self.processed_data, self.channel_strs)
+        self.save_data_func(file_name,
+                            self.timestamps, 
+                            self.processed_data, 
+                            self.channel_strs)
+        
         os.remove(self.completed_files[0])
     
     def update_display(self):
-            print('here')
-            self.LiveFeed1.update_figures(self.timestamps,self.data,self.processed_data,self.first_run)  
-            self.first_run = False 
+        """
+        Update the LiveFeed
+        
+        As this is only done every time the pre-processor loads a file this 
+        expected to be quite jumpy and there will be quite a lag.
+        """
+        
+        print('here')
+        self.LiveFeed1.update_figures(self.timestamps,self.data,self.processed_data,self.first_run)  
+        self.first_run = False 
 
     
 #%%    
 
 def run_pre_processor(PreProcessor1, file_ready_obj, tick_timeout, timeout=120):
+    """
+    The general loop that defines the operation of the pre-processor.
+    
+    It runs until a tick_timeout object is set and looks for new files on a 
+    file_ready_obj being set. Once a file is released for processing, it is: 
+        loaded,
+        processed,
+        saved,
+        liveFeed updated
+    After a file is processed a check is made to see if any other files are 
+    ready for processing (to deal with a backlog).
+    A timeout has also been set in case of an error however it is possible for 
+    the pre-processor thread to hang if the file_ready_object is not set to 
+    release this thread.
+    """
     
     start_time = time.time()  
     while not tick_timeout.isSet():

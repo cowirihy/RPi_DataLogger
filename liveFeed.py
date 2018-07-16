@@ -3,7 +3,17 @@
 Created on Wed Jul 11 10:08:56 2018
 
 @author: ARIR
+
+LiveFeed controls the live figure display for the data logger.
+
+The LiveFeed class produces a specifiable number of figures for any of the 
+channels being run for data produced after and before the pre-processing stage. 
+The graphing function can be over riden (The default is a line plot) to allow 
+any type of plot.
+
 """
+
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -62,6 +72,12 @@ class LiveFeed():
 
 
 class GroupFigs():
+    """
+    This class controls a group of figures, such as those that produce plots 
+    for before the pre-processing stage to allow easy itteration throughout all 
+    the required channels
+    """
+    
     def __init__(self, new_data, fig_len, selected_channels, draw_func):
         self.held_data = RingBuffer(new_data, fig_len)
         print(new_data)
@@ -74,7 +90,9 @@ class GroupFigs():
                                   args_subplot = subplot_args,
                                   kwargs_fig = fig_kwargs)
                 data = self.held_data.current_buffer()[channel]
-                data = [list(data.index),data.tolist()]
+                # Need to use map to convert outputted list to strings if ints 
+                # have been used to name the index
+                data = [list(map(str,list(data.index))),data.tolist()]
                 current_fig.update_fig(data)
                 self.group_figures[channel] = current_fig
     
@@ -84,11 +102,21 @@ class GroupFigs():
         for channel in self.selected_channels:
                 current_fig = self.group_figures[channel]
                 data = self.held_data.current_buffer()[channel]
-                data = [list(data.index),data.tolist()]
+                # Need to use map to convert outputted list to strings if ints 
+                # have been used to name the index
+                data = [list(map(str,list(data.index))),data.tolist()]
                 current_fig.update_fig(data)
 
 
 class RingBuffer():
+    """
+    This ring buffer holds a specifiable amount of data as a Data Frame.
+    
+    This ring buffer holds the data being plotted allowing the quatity of 
+    plotted data to be larger than one raw data save file. Once it's max size
+    is reached for any new data it deletes an entry at the top of the 
+    DataFrame.
+    """
     def __init__(self, data, max_length):
         self.max_rows = max_length
         
@@ -118,7 +146,9 @@ class RingBuffer():
         return list(self.buffer.index)
     
 class LiveFig():
-    
+    """
+    Produces a figure using the defined funtion, updates it and destroyes it.
+    """
     def __init__(self, draw_function,
                  args_subplot = None,
                  kwargs_subplot = {None:None},
@@ -131,11 +161,12 @@ class LiveFig():
         
     def update_fig(self,data):
         self.draw_func(data, self.fig, self.ax)
+        self.fig.show()
         
     def destroy_fig(self):
         plt.clear(self.fig)
 
-import datetime
+import datetime as dt
 
 def line_chart(data, fig, ax):
     
@@ -144,6 +175,8 @@ def line_chart(data, fig, ax):
     y = data[1][:]
     
     x = np.linspace(0,100,len(x))
+    #x = [dt.datetime.strptime(x,'%Y-%m-%dT%H:%M:%S.%fZ') for date in x]
+
     
     ax.plot(x, y, 'k')
     fig.canvas.draw()
