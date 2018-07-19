@@ -8,12 +8,13 @@ Main Data Logger thread:
     with a timeout of 10s
     Currently only runs a ticker thread and acquisition 19/6/2018
 """
-import DataGetFunc as dataGetFunc
+import DataGetFunc2 as dataGetFunc
 from ticker_example import ticker
 import threading
-import AcquisitionSystem as acqSys
+import acquisitionSystem as acqSys
 import pre_processor as prePro
-import RTIMU
+#import RTIMU
+from DataGetFunc2 import RTIMU
 import liveFeed
 #%% start of main code
 
