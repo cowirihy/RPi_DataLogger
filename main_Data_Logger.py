@@ -20,14 +20,19 @@ import liveFeed
 #### Inputs
 s = RTIMU.Settings('RTIMU_settings')
 imu = RTIMU.RTIMU(s) 
-print("IMU Name: " + imu.IMUName()) 
+print("IMU Name: " + imu.IMUName())
 
 if (not imu.IMUInit()): 
     print("IMU Init Failed!!!!")
+    print("Using fake IMU")
+    fake_IMU = True
 else: 
-    print("IMU Init Succeeded");
+    print("IMU Init Succeeded")
+    fake_IMU = False
 
-reader = dataGetFunc.AccelReader(imu)
+
+
+reader = dataGetFunc.AccelReader(imu, fake_IMU)
     
 samplingFunctions = [lambda :reader.x_accel_take(fetch_new_data = True), 
                      lambda :reader.y_accel_take(),
