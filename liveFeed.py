@@ -80,7 +80,7 @@ class GroupFigs():
     
     def __init__(self, new_data, fig_len, selected_channels, draw_func):
         self.held_data = RingBuffer(new_data, fig_len)
-        print(new_data)
+        
         self.group_figures = {None:None}
         self.selected_channels = selected_channels
         for channel in selected_channels:
