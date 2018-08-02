@@ -39,8 +39,8 @@ samplingFunctions = [lambda :reader.x_accel_take(fetch_new_data = True),
                      lambda :reader.y_accel_take(),
                      lambda :reader.z_accel_take()] 
 maxCacheSize = 100.0 
-fs = 64; T = 1/fs
-timeOut = 300.0
+fs = 16; T = 1/fs
+timeOut = 10.0
 fig_length = 30
 
 draw_funcs = {'Ch0':liveFeed.line_chart,  

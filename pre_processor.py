@@ -176,7 +176,6 @@ class PreProcessor():
         expected to be quite jumpy and there will be quite a lag.
         """
         
-        print('here')
         self.LiveFeed1.update_figures(self.timestamps,self.data,self.processed_data,self.first_run)  
         self.first_run = False 
 
