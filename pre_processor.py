@@ -13,11 +13,15 @@ import liveFeed
 #%%
 
 def default_load(file_name):
+    """
+    The default loading method: Assumes 1 line of header with the first column taken as the index.
+    It takes None strings as a numppy nan object - important for the rest of the code to run robustly.
+    """
     data = pd.read_csv(file_name, header = 1, index_col = 0)
     
     timestamps = np.array(data.index)
-    data = np.array(data)
-    
+    data = np.array(data.replace('None',np.nan))
+
     return (timestamps, data)
 
 
@@ -39,7 +43,7 @@ class PreProcessor():
                  dsp_processed_channels,  
                  load_data_func=default_load,   
                  save_data_func=default_save,   
-                 fig_x_len = 50,   
+                 fig_x_len = 1000,   
                  layover_size = 20,    
                  new_file_location = None,   
                  key_word = "Completed"): 

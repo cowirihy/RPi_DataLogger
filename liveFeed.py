@@ -174,8 +174,8 @@ def line_chart(data, fig, ax):
     x = data[0][:]
     y = data[1][:]
     
-    x = np.linspace(0,100,len(x))
-    #x = [dt.datetime.strptime(x,'%Y-%m-%dT%H:%M:%S.%fZ') for date in x]
+    #x = np.linspace(0,100,len(x))
+    x = [dt.datetime.strptime(date,"%Y-%m-%d %H:%M:%S.%f") for date in x]
 
     
     ax.plot(x, y, 'k')

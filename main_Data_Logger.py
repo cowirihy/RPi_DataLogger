@@ -32,9 +32,10 @@ reader = dataGetFunc.AccelReader(imu)
 samplingFunctions = [lambda :reader.x_accel_take(fetch_new_data = True), 
                      lambda :reader.y_accel_take(),
                      lambda :reader.z_accel_take()] 
-maxCacheSize = 1000.0 
-fs = 24; T = 1/fs
-timeOut = 10.0
+maxCacheSize = 100.0 
+fs = 64; T = 1/fs
+timeOut = 300.0
+fig_length = 30
 
 draw_funcs = {'Ch0':liveFeed.line_chart,  
               'Ch1':liveFeed.line_chart,  
@@ -66,8 +67,9 @@ ASys = acqSys.AcquisitionSystem(samplingFunctions)
 PrePross = prePro.PreProcessor(pre_process_func,   
                                draw_funcs,   
                                dsp_raw_channels,   
-                               dsp_processed_channels,   
-                               layover_size=layover_size) 
+                               dsp_processed_channels,
+                               fig_x_len = fig_length,
+                               layover_size = layover_size) 
 
 
 #Creates events
