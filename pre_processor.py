@@ -9,13 +9,13 @@ import os
 import numpy as np
 import pandas as pd
 import time
-import liveFeed
+
 #%%
 
 def default_load(file_name):
     """
     The default loading method: Assumes 1 line of header with the first column taken as the index.
-    It takes None strings as a numppy nan object - important for the rest of the code to run robustly.
+    It takes None strings as a numpy nan object - important for the rest of the code to run robustly.
     """
     
     data = pd.read_csv(file_name, header = 1, index_col = 0)
@@ -24,8 +24,6 @@ def default_load(file_name):
     data = np.array(data.replace('None',np.nan))
 
     return (timestamps, data)
-
-
 
 
 def default_save(file_name, timestamps, data, col_titles):
@@ -38,46 +36,137 @@ def default_save(file_name, timestamps, data, col_titles):
 
 class PreProcessor():
     
-    def __init__(self,process_funcs,  
-                 draw_function,   
-                 dsp_raw_channels,   
-                 dsp_processed_channels,  
+    def __init__(self,process_funcs,   
                  load_data_func=default_load,   
-                 save_data_func=default_save,   
-                 fig_x_len = 1000,   
-                 layover_size = 20,    
-                 acquisition_folder = 'data_raw/',
-                 output_folder = 'data_preprocessed/',   
-                 keyword = "Completed"): 
+                 save_data_func=default_save,
+                 delete_raw=False,
+                 channel_names=None,
+                 layover_size=20,    
+                 start_file_index=0,
+                 input_folder='data_raw/',
+                 output_folder='data_preprocessed/',   
+                 keyword='Completed'): 
 
         
         self.data = np.array(None)
-        self.process_funcs = process_funcs
-        self.layover_size = layover_size
-        self.acquisition_folder = acquisition_folder
-        self.output_folder = output_folder
-        self.keyword = keyword        
-        self.first_run = True
-        self.load_data_func = load_data_func 
-        self.save_data_func = save_data_func
-        self.layover_data = np.empty((len(self.process_funcs), layover_size))
-        self.max_channel_num = len(self.process_funcs)
-        self.channel_strs = [None]*self.max_channel_num
+        """
+        Data for all channels
+        """
         
-        for channel_num in range(0,len(self.process_funcs)):
-            self.channel_strs[channel_num] = 'Ch' + str(channel_num)
-            
-        self.LiveFeed1 = liveFeed.LiveFeed(self.channel_strs,   
-                                           fig_x_len,  
-                                           raw_data_channels = dsp_raw_channels,   
-                                           processed_data_channels = dsp_processed_channels) 
+        self.process_funcs = process_funcs
+        """
+        List of pre-processing functions to apply to all channels
+        """
+    
+        self.input_folder = input_folder
+        """
+        _String_ denoting relative path to folder containing raw data files 
+        to be processed
+        """
+        
+        self.output_folder = output_folder
+        """
+        _String_ denoting relative path to folder to contain data files once 
+        processed
+        """
+        
+        self.keyword = keyword        
+        """
+        Keyword used to select filter files requiring processing
+        """
+               
+        self.first_run = True
+        """
+        _Boolean_, denotes first run of pre-processor
+        """
+        
+        self.load_data_func = load_data_func 
+        """
+        Function used to load raw data from files
+        """
+        
+        self.save_data_func = save_data_func
+        """
+        Function used to save processed data to files
+        """
+        
+        self.delete_raw = delete_raw
+        """
+        _Boolean_, used to denote whether raw data files should be deleted 
+        following pre-processing
+        """
+        
+        self.layover_size = layover_size
+        self.layover_data = np.empty((len(self.process_funcs), layover_size))
+        """
+        Data from previous file, required for some processing operations 
+        (e.g. filtering)
+        """
+        
+        self.max_channel_num = len(self.process_funcs)
+        """
+        Number of channels defined
+        """
+                
+        if channel_names is None:
+            channel_names = ['Ch %d' % x for x in range(len(self.process_funcs))]
+        
+        self.channel_names = channel_names
+        """
+        Strings to denote channels
+        """
+        
+        self.file_index = start_file_index
+        """
+        _Integer_ index denoting index of next raw data file to be processed.
+        Typically 0, except when raw files are not being deleted
+        or if raw files exist prior to initialisation of pre-processor
+        """
+        
+        # Define attributes not initialised
+        self.files_to_process = []
+        """
+        List of raw data files requiring pre-processing
+        """
+        
+        self.processed_data = np.empty((0,self.max_channel_num))
+        """
+        Array of processed data
+        """
+        
+        self.current_file = ""
+        """
+        _String_ denoting file currently being pre-processed
+        """
 
     
-    def check_files(self):
+    def check_files(self,verbose=False):
+        """
+        Obtains list of raw data files requiring pre-processing
+        
+        Returns:
             
-        fldr = self.acquisition_folder
-        file_names = os.listdir(fldr)
-        self.completed_files = [fldr + s for s in file_names if self.keyword in s]
+        _Boolean_, True is file avaliable for processing
+        """
+            
+        fldr = self.input_folder
+        fnames = os.listdir(fldr)
+        
+        files_to_process = [fldr + s for s in fnames if self.keyword in s]
+        
+        self.files_to_process = files_to_process
+        
+        if verbose:
+            print("Files avaliable:\n{0}".format(files_to_process))
+        
+        nFiles = len(files_to_process)
+        
+        if nFiles > 0 and self.file_index < nFiles:
+            # Requested file in range
+            return True
+        
+        else:
+            return False
         
         
     def process_data(self):
@@ -139,9 +228,9 @@ class PreProcessor():
                               Error applying process function e.g. filter')
                         
             self.processed_data[:,channel_num] = raw_processed_data
-            
+                
     
-    def load_files(self):
+    def load_data(self,verbose=False):
         """
         Loads the raw files using the function defined in load_data_func.
         
@@ -149,7 +238,26 @@ class PreProcessor():
         into layover.
         """
         
-        (self.timestamps, self.data) = self.load_data_func(self.completed_files[0])
+        # Read data from next raw file
+        if len(self.files_to_process) > 0:
+            
+            self.current_file = self.files_to_process[self.file_index]
+            
+            if verbose:
+                print("Loading data from file #%d:\n" % self.file_index + 
+                      "'%s'" % self.current_file)
+            
+        else:
+            
+            if verbose:
+                print("(No data avaliable for pre-processing)")
+            
+            return False
+        
+        # Load data using load function
+        (t,x) = self.load_data_func(self.current_file)
+        self.timestamps = t
+        self.data = x
         
         if self.first_run == True:
             # Can't add layover data as this is the first file
@@ -159,13 +267,17 @@ class PreProcessor():
             # Update layover variable before loading new data
             self.layover = self.data[:,-self.layover_size:]
             
-        self.processed_data = np.empty((len(self.timestamps),self.max_channel_num))
+        # Clear previous processed data
+        self.processed_data = np.empty((len(self.timestamps),
+                                        self.max_channel_num))
+        
+        return True
 
 
-    def save_files(self,
-                   delete_raw=False,
-                   old_suffix = 'Completed.csv',
-                   new_suffix = 'Processed.csv'):
+    def save_data(self,
+                  old_suffix = 'Completed.csv',
+                  new_suffix = 'Processed.csv',
+                  verbose=True):
         """
         Save the data to file and delete the original data.
         
@@ -182,7 +294,7 @@ class PreProcessor():
         """
                 
         # Get file name of file being pre-processed
-        raw_file = self.completed_files[0]
+        raw_file = self.files_to_process[self.file_index]
         
         # Strip of folder name
         file_name = os.path.split(raw_file)[1]
@@ -198,68 +310,76 @@ class PreProcessor():
         self.save_data_func(file_name,
                             self.timestamps, 
                             self.processed_data, 
-                            self.channel_strs)
+                            self.channel_names)
         
         # Delete old file
-        if delete_raw:
+        if self.delete_raw:
             os.remove(raw_file)
+            self.file_index = 0  # process first file in list next time
+            
+            if verbose:
+                print("Deleting '%s'" % raw_file)
+            
+        else:
+            self.file_index += 1 # index of next file to be processed
     
     
-    def update_display(self):
-        """
-        Update the LiveFeed
-        
-        As this is only done every time the pre-processor loads a file this 
-        expected to be quite jumpy and there will be quite a lag.
-        """
-        
-        self.LiveFeed1.update_figures(self.timestamps,self.data,self.processed_data,self.first_run)  
-        self.first_run = False 
+#    def update_display(self):
+#        """
+#        Update the LiveFeed
+#        
+#        As this is only done every time the pre-processor loads a file this 
+#        expected to be quite jumpy and there will be quite a lag.
+#        """
+#        
+#        self.LiveFeed1.update_figures(self.timestamps,self.data,self.processed_data,self.first_run)  
+#        self.first_run = False 
 
     
-#%%    
-
-def run_pre_processor(PreProcessor1, file_ready_obj, tick_timeout, timeout=120):
-    """
-    The general loop that defines the operation of the pre-processor.
-    
-    It runs until a tick_timeout object is set and looks for new files on a 
-    file_ready_obj being set. Once a file is released for processing, it is: 
-        loaded,
-        processed,
-        saved,
-        liveFeed updated
-    After a file is processed a check is made to see if any other files are 
-    ready for processing (to deal with a backlog).
-    A timeout has also been set in case of an error however it is possible for 
-    the pre-processor thread to hang if the file_ready_object is not set to 
-    release this thread.
-    """
-    
-    start_time = time.time()  
-    while not tick_timeout.isSet():
-        current_t = time.time() - start_time
-        file_ready_obj.wait()
-        file_ready_obj.clear()
-        PreProcessor1.check_files()
-        if current_t > timeout:
-            print('Warning: Processor timed out')
-            return
-        while PreProcessor1.completed_files:
-            PreProcessor1.load_files()
-            PreProcessor1.process_data()
-            PreProcessor1.save_files()
-            PreProcessor1.update_display()
-            print('Processor: file processed and saved')
-            PreProcessor1.check_files()
-            if current_t > timeout:
-                print('Warning: Processor timed out')
-                return
+    def run(self, file_ready_obj, tick_timeout, timeout=120):
+        """
+        Main routine, defines the operation of the pre-processor.
+        
+        It runs until a tick_timeout object is set and looks for new files on a 
+        file_ready_obj being set. Once a file is released for processing, it is: 
+            loaded,
+            processed,
+            saved,
+            liveFeed updated
+        After a file is processed a check is made to see if any other files are 
+        ready for processing (to deal with a backlog).
+        A timeout has also been set in case of an error however it is possible for 
+        the pre-processor thread to hang if the file_ready_object is not set to 
+        release this thread.
+        """
+        
+        start_time = time.time()  
+        
+        while not tick_timeout.isSet():
+            
             current_t = time.time() - start_time
+            
+            file_ready_obj.wait()
+            file_ready_obj.clear()
+            
+            while self.check_files():
+            
+                self.load_data()
+                
+                self.process_data()
+                
+                self.save_data()
+                
+                #PreProcessor1.update_display()
+                
+                if current_t > timeout:
+                    print('Warning: Pre-processor timed out')
+                    return
+                
+                current_t = time.time() - start_time
+            
+        print('PRE:\tThread finished')
         
-    
-    print('PreProcessor: Finished and shut down')
-    
     
 #%%    
     
@@ -274,22 +394,17 @@ if __name__ == "__main__":
         return yy
     
     process_funcs = [[addition_1, addition_1, addition_1],[subtract_1]]  
-    draw_function={'Ch1':liveFeed.line_chart,'Ch2':liveFeed.line_chart}  
-    dsp_raw_channels = list(draw_function.keys())  
-    dsp_processed_channels = list(draw_function.keys())  
-      
-    PreProcessor1 = PreProcessor(process_funcs,  
-                                draw_function,  
-                                dsp_raw_channels,  
-                                dsp_processed_channels, 
-                                layover_size = 3)
+          
+    PreProcessor1 = PreProcessor(process_funcs,delete_raw=True)
+       
+    PreProcessor1.check_files(verbose=True)
     
-   
-    for ii in range(0,1):
-        PreProcessor1.check_files()
-        PreProcessor1.load_files()
-        print(PreProcessor1.data)
+    data_loaded = PreProcessor1.load_data(verbose=True)
+    #print(PreProcessor1.data)
+    
+    if data_loaded:
+    
         PreProcessor1.process_data()
-        print(PreProcessor1.processed_data)
-        PreProcessor1.save_files()
-        PreProcessor1.update_display()
+    #print(PreProcessor1.processed_data)
+    
+        PreProcessor1.save_data(verbose=True)

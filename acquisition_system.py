@@ -90,9 +90,7 @@ class AcquisitionSystem:
         new_name = old_name[:-4] + '_Completed.csv'
         os.rename(old_name,new_name)
         
-        print("Acquisition System: File completed")
-        print("\tOld name: %s" % old_name)
-        print("\tNew name: %s" % new_name)
+        print("ACQ:\tFile completed\n\t%s" % new_name)
     
 class Channel:
     """
@@ -142,7 +140,8 @@ def runAcquisition(tick_obj,
         AcqSys.file_Complete()
         fileReady_obj.set()
         
-    print('Acquisition System: Finished')
+    print('ACQ:\tThread finished')
+    
     
 def list_to_string(myList,delimiter=','):
     return delimiter.join(map(str, myList))

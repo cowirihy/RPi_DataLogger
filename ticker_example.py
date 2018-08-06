@@ -14,9 +14,10 @@ exec_times = []
 
 def ticker(tick,T:float=1.0,timeout:float=10.0, tick_timeout = None):
     
-    print("Ticker thread started")
-    print("Time interval: %f" % T)
-    print("Timeout: %f" % timeout)
+    print("TICK:\tThread started\n" + 
+          "\tSampling freq:\t%.2f Hz\n" % (1/T) +
+          "\tTime interval:\t%.4f secs\n" % T +
+          "\tTimeout:\t%.2fsecs" % timeout)
     
     current_time = time.time() - start_time
     
@@ -27,7 +28,7 @@ def ticker(tick,T:float=1.0,timeout:float=10.0, tick_timeout = None):
         time.sleep(T)
         tick.set()
         
-    print("Ticker thread timed-out")
+    print("TICK:\tThread timed-out")
     
     if tick_timeout is not None:
         tick_timeout.set()
