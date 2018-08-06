@@ -8,31 +8,40 @@ Main Data Logger thread:
     with a timeout of 10s
     Currently only runs a ticker thread and acquisition 19/6/2018
 """
-import DataGetFunc as dataGetFunc
+import DataGetFunc2 as dataGetFunc
 from ticker_example import ticker
 import threading
-import AcquisitionSystem as acqSys
+
+# Define classes used in core threads
+import acquisition_system as acqSys
 import pre_processor as prePro
-import RTIMU
+
+#import RTIMU
+from DataGetFunc2 import RTIMU
 import liveFeed
 #%% start of main code
 
 #### Inputs
 s = RTIMU.Settings('RTIMU_settings')
 imu = RTIMU.RTIMU(s) 
-print("IMU Name: " + imu.IMUName()) 
+print("IMU Name: " + imu.IMUName())
 
 if (not imu.IMUInit()): 
     print("IMU Init Failed!!!!")
+    print("Using fake IMU")
+    fake_IMU = True
 else: 
-    print("IMU Init Succeeded");
+    print("IMU Init Succeeded")
+    fake_IMU = False
 
-reader = dataGetFunc.AccelReader(imu)
+
+
+reader = dataGetFunc.AccelReader(imu, fake_IMU)
     
 samplingFunctions = [lambda :reader.x_accel_take(fetch_new_data = True), 
                      lambda :reader.y_accel_take(),
                      lambda :reader.z_accel_take()] 
-maxCacheSize = 100.0 
+maxCacheSize = 50.0 
 fs = 16; T = 1/fs
 timeOut = 10.0
 fig_length = 30
