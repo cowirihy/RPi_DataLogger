@@ -17,6 +17,7 @@ def default_load(file_name):
     The default loading method: Assumes 1 line of header with the first column taken as the index.
     It takes None strings as a numppy nan object - important for the rest of the code to run robustly.
     """
+    
     data = pd.read_csv(file_name, header = 1, index_col = 0)
     
     timestamps = np.array(data.index)
@@ -45,15 +46,17 @@ class PreProcessor():
                  save_data_func=default_save,   
                  fig_x_len = 1000,   
                  layover_size = 20,    
-                 new_file_location = None,   
-                 key_word = "Completed"): 
+                 acquisition_folder = 'data_raw/',
+                 output_folder = 'data_preprocessed/',   
+                 keyword = "Completed"): 
 
         
         self.data = np.array(None)
         self.process_funcs = process_funcs
         self.layover_size = layover_size
-        self.acquisition_folder = new_file_location
-        self.key_word = key_word        
+        self.acquisition_folder = acquisition_folder
+        self.output_folder = output_folder
+        self.keyword = keyword        
         self.first_run = True
         self.load_data_func = load_data_func 
         self.save_data_func = save_data_func
@@ -71,11 +74,12 @@ class PreProcessor():
 
     
     def check_files(self):
-        file_names = os.listdir(self.acquisition_folder)
-    
-        self.completed_files = [s for s in file_names if self.key_word in s]
+            
+        fldr = self.acquisition_folder
+        file_names = os.listdir(fldr)
+        self.completed_files = [fldr + s for s in file_names if self.keyword in s]
         
-    
+        
     def process_data(self):
         """
         Process the data using the functions defined
@@ -135,6 +139,7 @@ class PreProcessor():
                               Error applying process function e.g. filter')
                         
             self.processed_data[:,channel_num] = raw_processed_data
+            
     
     def load_files(self):
         """
@@ -144,29 +149,61 @@ class PreProcessor():
         into layover.
         """
         
+        (self.timestamps, self.data) = self.load_data_func(self.completed_files[0])
+        
         if self.first_run == True:
             # Can't add layover data as this is the first file
-            (self.timestamps, self.data) = self.load_data_func(self.completed_files[0])
+            pass
         
         else:
             # Update layover variable before loading new data
             self.layover = self.data[:,-self.layover_size:]
-            (self.timestamps, self.data) = self.load_data_func(self.completed_files[0])
+            
         self.processed_data = np.empty((len(self.timestamps),self.max_channel_num))
 
 
-    def save_files(self):
+    def save_files(self,
+                   delete_raw=False,
+                   old_suffix = 'Completed.csv',
+                   new_suffix = 'Processed.csv'):
         """
         Save the data to file and delete the original data.
-        """
         
-        file_name = self.completed_files[0][:-13] + 'Processed.csv'
+        ***
+        Optional:
+        
+        * `delete_raw`, _boolean_, if True raw data files will be deleted
+          once they have been pre-processed
+          
+        * `old_suffix`, _string_, suffix for raw data files to be pre-processed
+        
+        * `new_suffix`, _string_, suffix for new data files following pre-processing
+          
+        """
+                
+        # Get file name of file being pre-processed
+        raw_file = self.completed_files[0]
+        
+        # Strip of folder name
+        file_name = os.path.split(raw_file)[1]
+
+        # Strip of old suffix
+        file_name = file_name[:-len(old_suffix)]
+        
+        # Append output folder and new suffix
+        file_name = self.output_folder + file_name
+        file_name += new_suffix
+        
+        # Write datafile using defined write function
         self.save_data_func(file_name,
                             self.timestamps, 
                             self.processed_data, 
                             self.channel_strs)
         
-        os.remove(self.completed_files[0])
+        # Delete old file
+        if delete_raw:
+            os.remove(raw_file)
+    
     
     def update_display(self):
         """
