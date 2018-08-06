@@ -30,7 +30,7 @@ class AcquisitionSystem:
         for channelNum in range(0,self.numChannels):
             self.channels[channelNum] = Channel(channelNum, dataSampleFunc[channelNum])
     
-    def createFile(self):
+    def createFile(self,file_prefix='data_raw/'):
         """
         Creates a new file with the date and time in UTC time. 
         ~ Stores the file name in fileName for other methods to use as the 
@@ -41,7 +41,9 @@ class AcquisitionSystem:
         yet in file. 
         """
         
-        self.fileName = datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".csv"
+        file_name = datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".csv"
+        file_name = file_prefix + file_name
+        self.fileName = file_name
         currentFile = open(self.fileName,'a')
         
         # Write the headers
@@ -87,6 +89,10 @@ class AcquisitionSystem:
         old_name = self.fileName
         new_name = old_name[:-4] + '_Completed.csv'
         os.rename(old_name,new_name)
+        
+        print("Acquisition System: File completed")
+        print("\tOld name: %s" % old_name)
+        print("\tNew name: %s" % new_name)
     
 class Channel:
     """
@@ -136,8 +142,7 @@ def runAcquisition(tick_obj,
         AcqSys.file_Complete()
         fileReady_obj.set()
         
-        print("Acqusition System: File completed")
-    print('Acqusition System: Finished')
+    print('Acquisition System: Finished')
     
 def list_to_string(myList,delimiter=','):
     return delimiter.join(map(str, myList))
