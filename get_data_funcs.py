@@ -1,28 +1,40 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jun 14 09:14:50 2018
+Functions to acquire data, either using RPi RTIMU interface or using 
+RTIMU emulator
 
 @author: arir
 """
+
+# Attempt to load RTIMU module
+# (Will not work generally when not executing from RPi)
 try:
     import RTIMU
+    
 except:
-    class placeHolderIMU():
+    
+    class IMU_mimic():
+        
         def __init__(self):
             return
         
         def IMUName(self):
             return 'FAKE'
+        
         def IMUInit(self):
             return False
     
     class RTIMU():
+        
         def __init__(self):
             return
+        
         def Settings(s):
             return s
+        
         def RTIMU(s):
-            return placeHolderIMU()
+            return IMU_mimic()
+        
     
 from random import uniform
 import time
@@ -33,6 +45,7 @@ def randomNum():
 
 
 class AccelReader():
+    
     def __init__(self, imu, fake_IMU=False):
         
         if not fake_IMU:
@@ -45,31 +58,50 @@ class AccelReader():
     def all_accel_take(self):       
         
         if not self.fake_IMU:
+            
             if self.imu.IMURead(): 
-                self.data = self.imu.getAccel()
+                acc_xyz = self.imu.getAccel()
+                
             else:
                 print('Warning: failed to get data')
-                self.data = (None, None, None)
+                acc_xyz = (None, None, None)
+                
         else:
-            self.data = (uniform(-10,40),uniform(-10,40),uniform(-10,40))
+            acc_xyz = (uniform(-10,40),uniform(-10,40),uniform(-10,40))
+        
+        self.data = acc_xyz
+        
+        return acc_xyz
+    
             
     def x_accel_take(self, fetch_new_data = False):
+    
         if fetch_new_data:
             self.all_accel_take()
-        xx = self.data[0]
-        return xx 
+            
+        acc_x = self.data[0]
         
+        return acc_x
+        
+    
     def y_accel_take(self, fetch_new_data = False):
+    
         if fetch_new_data:
             self.all_accel_take()
-        yy = self.data[1]
-        return yy     
+            
+        acc_y = self.data[1]
+        
+        return acc_y    
+    
         
     def z_accel_take(self, fetch_new_data = False):
+    
         if fetch_new_data:
             self.all_accel_take()
-        zz = self.data[2]
-        return zz
+            
+        acc_z = self.data[2]
+        
+        return acc_z
  
                   
 if __name__ == '__main__':
@@ -90,10 +122,10 @@ if __name__ == '__main__':
     reader = AccelReader(imu,fake_IMU)
     
     
-    def some_program(get_data):
+    def test_routine(get_data_func,**kwargs):
         
         for t in range(0,10):
-            print(reader.x_accel_take(fetch_new_data = True))
-            time.sleep(0.1)
+            print(get_data_func(**kwargs))
+            time.sleep(0.2)
 
-    some_program(lambda: reader.all_accel_take())
+    test_routine(reader.all_accel_take)

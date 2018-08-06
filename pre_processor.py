@@ -42,7 +42,6 @@ class PreProcessor():
                  delete_raw=False,
                  channel_names=None,
                  layover_size=20,    
-                 start_file_index=0,
                  input_folder='data_raw/',
                  output_folder='data_preprocessed/',   
                  keyword='Completed'): 
@@ -116,7 +115,7 @@ class PreProcessor():
         Strings to denote channels
         """
         
-        self.file_index = start_file_index
+        self.file_index = self.init_file_index()
         """
         _Integer_ index denoting index of next raw data file to be processed.
         Typically 0, except when raw files are not being deleted
@@ -138,6 +137,19 @@ class PreProcessor():
         """
         _String_ denoting file currently being pre-processed
         """
+        
+
+    def init_file_index(self):
+        """
+        Initialises file index by counting number of data files already
+        present in raw files folder at initialisation of the pre-processor
+        
+        (These files are not to be pre-processed)
+        """
+        
+        self.file_index = 0
+        self.check_files()
+        return len(self.files_to_process)
 
     
     def check_files(self,verbose=False):
@@ -312,13 +324,16 @@ class PreProcessor():
                             self.processed_data, 
                             self.channel_names)
         
+        if verbose:
+            print("PRE:\tNew file created\n\t%s" % file_name)
+        
         # Delete old file
         if self.delete_raw:
             os.remove(raw_file)
             self.file_index = 0  # process first file in list next time
             
             if verbose:
-                print("Deleting '%s'" % raw_file)
+                print("PRE:\tRaw data file deleted\n\t%s" % raw_file)
             
         else:
             self.file_index += 1 # index of next file to be processed
@@ -336,7 +351,7 @@ class PreProcessor():
 #        self.first_run = False 
 
     
-    def run(self, file_ready_obj, tick_timeout, timeout=120):
+    def run(self, file_ready_obj, tick_timeout, timeout=120, verbose=True):
         """
         Main routine, defines the operation of the pre-processor.
         
@@ -368,17 +383,21 @@ class PreProcessor():
                 
                 self.process_data()
                 
-                self.save_data()
+                self.save_data(verbose=verbose)
                 
                 #PreProcessor1.update_display()
                 
                 if current_t > timeout:
-                    print('Warning: Pre-processor timed out')
+                    
+                    if verbose:
+                        print('Warning: Pre-processor timed out')
+                        
                     return
                 
                 current_t = time.time() - start_time
             
-        print('PRE:\tThread finished')
+        if verbose:
+            print('PRE:\tThread finished')
         
     
 #%%    

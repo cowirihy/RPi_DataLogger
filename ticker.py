@@ -15,9 +15,9 @@ exec_times = []
 def ticker(tick,T:float=1.0,timeout:float=10.0, tick_timeout = None):
     
     print("TICK:\tThread started\n" + 
-          "\tSampling freq:\t%.2f Hz\n" % (1/T) +
-          "\tTime interval:\t%.4f secs\n" % T +
-          "\tTimeout:\t%.2fsecs" % timeout)
+          "\tSampling freq:\t%.2f\tHz\n" % (1/T) +
+          "\tTime interval:\t%.4f\tsecs\n" % T +
+          "\tTimeout:\t%.2f\tsecs" % timeout)
     
     current_time = time.time() - start_time
     
