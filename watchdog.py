@@ -32,7 +32,7 @@ sense.clear()
 
 red   = (255,   0,   0)
 green = (  0, 255,   0)
-amber = (244, 182,  66)
+amber = (255, 128,   0)
 black = (  0,   0,   0)
 
 # Define shape of grid of pixels on SenseHat
@@ -114,7 +114,7 @@ class Watchdog():
         p = self.acq_obj.get_proportion_complete()
         nx = int(n_pixel_cols * p) # convert to number of lights on pixel grid
         
-        missing_data = self.acq_obj.missing_data
+        missing_data = self.acq_obj.has_missing_data()
         
         for x in range(n_pixel_cols):
             

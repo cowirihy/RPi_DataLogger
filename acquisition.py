@@ -68,6 +68,12 @@ class AcquisitionSystem:
         _List_, used as container for acquired data and timestamp
         """
         
+        self.nRows = 0
+        """
+        _Integer_, denotes number of data rows written to current file
+        """
+        
+        
         self.maxRows = maxRowsPerFile
         """
         _Integer_, denotes number of data rows to be written to each file
@@ -86,10 +92,10 @@ class AcquisitionSystem:
         _Boolean_, True within run() method
         """
         
-        self.missing_data = False
+        self.missing_data_count = 0
         """
-        _Boolean_ flag to denote that file currently being written contains 
-        missing data
+        _Integer_ counter to denote number of missing data lines in file
+        currently being written
         """
             
     
@@ -100,6 +106,17 @@ class AcquisitionSystem:
         
         self.channels.append(channel_obj)
         self.nChannels += 1
+        
+        
+    def has_missing_data(self):
+        """
+        Returns True if file contains missing data rows
+        False otherwise
+        """
+        if self.missing_data_count>0:
+            return True
+        else:
+            return False
         
     
     def create_file(self,file_prefix='data_raw/'):
@@ -174,7 +191,7 @@ class AcquisitionSystem:
             
             if val is None:
                 print('ACQ:\tWarning: failed to get data')
-                self.missing_data = True
+                self.missing_data_count += 1
             
     
     def file_complete(self,suffix:str='_Completed.csv',verbose=False):
@@ -189,7 +206,7 @@ class AcquisitionSystem:
         if verbose:
             print("ACQ:\tFile completed\n\t%s" % new_name)
             
-        self.missing_data = False # reset flag
+        self.missing_data_count = 0 # reset counter
         
         
     def run(self,tick_obj, file_ready_obj, tick_timeout, verbose=True):

@@ -41,9 +41,9 @@ samplingFunctions = [lambda :reader.x_accel_take(fetch_new_data = True),
                      lambda :reader.z_accel_take()] 
 
 # **** KEY PARAMETERS CONTROLLING DATA ACQUSITION ****
-file_length = 3.0                   # in seconds
+file_length = 5.0                  # in seconds
 fs = 16                             # sampling frequency (Hz)
-timeOut = 15.0                      # timeout duration (secs)
+timeOut = 30.0                      # timeout duration (secs)
 
 dt = 1/fs                            # sampling period (secs)
 maxCacheSize = file_length * fs     # number of data rows per file
@@ -106,15 +106,18 @@ PreProcess_thread = threading.Thread(name = 'Pre-Processor',
                                      
 Watchdog_thread = threading.Thread(name = 'Watchdog',
                                    target = Watchdog.run,
-                                   kwargs={'verbose':True})                                     
+                                   kwargs={'verbose':False})                                     
 
 # Start threads
-ticker_thread.start()
-time.sleep(0.5)
-Acq_thread.start()
-time.sleep(0.5)
-PreProcess_thread.start()
-time.sleep(0.5)
 Watchdog_thread.start()
+time.sleep(1.0)
+ticker_thread.start()
+time.sleep(1.0)
+Acq_thread.start()
+time.sleep(1.0)
+PreProcess_thread.start()
+
+
+
 
 
