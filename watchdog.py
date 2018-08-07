@@ -13,7 +13,7 @@ try:
 
 except:
 
-    # Dummy class in case of not using RPi
+    # Dummy class (used when testing code by not running from RPi)
     class SenseHat():
         
         def __init__(self):
@@ -30,13 +30,14 @@ except:
 sense = SenseHat()
 sense.clear()
 
-red = (255, 0, 0)
-green = (0, 255, 0)
-black = (0, 0, 0)
+red   = (255,   0,   0)
+green = (  0, 255,   0)
+amber = (244, 182,  66)
+black = (  0,   0,   0)
 
 # Define shape of grid of pixels on SenseHat
-nPix_rows = 8
-nPix_cols = 8 
+n_pixel_rows = 8
+n_pixel_cols = 8 
 
 
 class Watchdog():
@@ -60,39 +61,13 @@ class Watchdog():
         while not self.tick_timeout.isSet():
             
             # Check status of acquisition system
-            if not self.acq_obj.running:
-                
-                if verbose:
-                    print("WTCH:\tAcqusition thread not running!")
-                
-                sense.set_pixel(0, 0, red)
-                
-            else:
-                sense.set_pixel(0, 0, green)
+            self.check_acq_status(verbose=verbose)
                 
             # Check status of pre-processor
-            if not self.preproc_obj.running:
-                
-                if verbose:
-                    print("WTCH:\tPreprocessor thread not running!")
-                    
-                sense.set_pixel(1, 0, red)
-                
-            else:
-                sense.set_pixel(1, 0, green)
+            self.check_preproc_status(verbose=verbose)
                 
             # Get % complete for raw file currently being written
-            p = self.acq_obj.get_proportion_complete()
-            nx = int(nPix_cols * p)
             
-            for x in range(nPix_cols):
-                
-                if x <= nx:
-                    c = green
-                else:
-                    c = black
-                    
-                sense.set_pixel(x, nPix_rows-1, c)
                 
             # Wait for preset time before checking statuses again
             time.sleep(self.refresh_dt)
@@ -102,3 +77,56 @@ class Watchdog():
             
         self.running = False
         sense.clear()
+        
+    
+    def check_acq_status(self,status_pixel=(0,0),verbose=True):
+        
+        if not self.acq_obj.running:
+            
+            if verbose:
+                print("WTCH:\tAcqusition thread not running!")
+            
+            c = red
+            
+        else:
+            c = green
+        
+        sense.set_pixel(*status_pixel, c)
+        
+    
+    def check_preproc_status(self,status_pixel=(1,0),verbose=True):
+        
+        if not self.preproc_obj.running:
+                
+            if verbose:
+                print("WTCH:\tPreprocessor thread not running!")
+                
+            c = red
+            
+        else:
+            c = green
+        
+        sense.set_pixel(*status_pixel, c)
+        
+        
+    def check_raw_file_status(self,pixel_row=(n_pixel_rows-1)):
+        
+        p = self.acq_obj.get_proportion_complete()
+        nx = int(n_pixel_cols * p) # convert to number of lights on pixel grid
+        
+        missing_data = self.acq_obj.missing_data
+        
+        for x in range(n_pixel_cols):
+            
+            if x <= nx:
+                
+                if not missing_data:
+                    c = green
+                else:
+                    c = amber
+                                
+            else:
+                c = black
+                
+            sense.set_pixel(x, pixel_row, c)
+        

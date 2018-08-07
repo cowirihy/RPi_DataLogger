@@ -63,7 +63,7 @@ class AccelReader():
                 acc_xyz = self.imu.getAccel()
                 
             else:
-                print('Warning: failed to get data')
+                #print('Warning: failed to get data')
                 acc_xyz = (None, None, None)
                 
         else:

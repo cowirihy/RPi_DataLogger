@@ -85,6 +85,12 @@ class AcquisitionSystem:
         """
         _Boolean_, True within run() method
         """
+        
+        self.missing_data = False
+        """
+        _Boolean_ flag to denote that file currently being written contains 
+        missing data
+        """
             
     
     def add_channel(self,channel_obj):
@@ -162,7 +168,13 @@ class AcquisitionSystem:
         
         # Get data from all channels
         for ch in range(self.nChannels):
-            self.foundData[ch+1] = self.channels[ch].get_data()
+            
+            val = self.channels[ch].get_data()
+            self.foundData[ch+1] = val
+            
+            if val is None:
+                print('ACQ:\tWarning: failed to get data')
+                self.missing_data = True
             
     
     def file_complete(self,suffix:str='_Completed.csv',verbose=False):
@@ -176,6 +188,8 @@ class AcquisitionSystem:
         
         if verbose:
             print("ACQ:\tFile completed\n\t%s" % new_name)
+            
+        self.missing_data = False # reset flag
         
         
     def run(self,tick_obj, file_ready_obj, tick_timeout, verbose=True):
