@@ -43,7 +43,7 @@ samplingFunctions = [lambda :reader.x_accel_take(fetch_new_data = True),
 # **** KEY PARAMETERS CONTROLLING DATA ACQUSITION ****
 file_length = 5.0                  # in seconds
 fs = 16                             # sampling frequency (Hz)
-timeOut = 30.0                      # timeout duration (secs)
+timeOut = 15.0                      # timeout duration (secs)
 
 dt = 1/fs                            # sampling period (secs)
 maxCacheSize = file_length * fs     # number of data rows per file

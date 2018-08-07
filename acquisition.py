@@ -233,7 +233,7 @@ class AcquisitionSystem:
             
             self.create_file()
             
-            while (self.nRows < self.maxRows) and (not tick_timeout.isSet()):
+            while self.nRows < self.maxRows:
         
                 tick_obj.wait()
                 tick_obj.clear()

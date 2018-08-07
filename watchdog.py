@@ -68,8 +68,11 @@ class Watchdog():
                 
             # Get % complete for raw file currently being written
             self.check_raw_file_status()
+            
+            # Get for user inputs e.g. via joystick
+            self.check_user_inputs()
                 
-            # Wait for preset time before checking statuses again
+            # Wait for preset time before running checks again
             time.sleep(self.refresh_dt)
             
         if verbose:
@@ -129,4 +132,15 @@ class Watchdog():
                 c = black
                 
             sense.set_pixel(x, pixel_row, c)
-        
+            
+            
+    def check_user_inputs(self):
+                
+        for event in sense.stick.get_events():
+            
+            if event.direction == "middle" and event.action == "held":
+            
+                print("WTCH: Joystick pressed and held\n" +
+                      "\tAcquisition will terminate " +
+                      "once next file completed")
+                self.tick_timeout.set()       # terminates acquisition
