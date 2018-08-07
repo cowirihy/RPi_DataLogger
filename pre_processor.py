@@ -162,7 +162,7 @@ class PreProcessor():
         """
             
         fldr = self.input_folder
-        fnames = os.listdir(fldr)
+        fnames = sorted(os.listdir(fldr))
         
         files_to_process = [fldr + s for s in fnames if self.keyword in s]
         
