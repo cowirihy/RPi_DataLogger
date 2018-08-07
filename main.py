@@ -91,21 +91,18 @@ Watchdog = watchdog.Watchdog(ASys,PrePross,event_ticker_timeout)
 ticker_thread = threading.Thread(name= 'Ticker', 
                                  target = tick_obj.run)
 
-
 Acq_thread = threading.Thread(name = 'Acquisition',
                               target = ASys.run,
                               args=(eventGoGetData, 
                                     eventFileReady, 
                                     event_ticker_timeout),
                               kwargs={'verbose':True})
-                              
-                              
+                                                   
 PreProcess_thread = threading.Thread(name = 'Pre-Processor',
                                      target = PrePross.run,
                                      args=(eventFileReady, 
                                            event_ticker_timeout),
                                      kwargs={'verbose':True})
-
                                      
 Watchdog_thread = threading.Thread(name = 'Watchdog',
                                    target = Watchdog.run,

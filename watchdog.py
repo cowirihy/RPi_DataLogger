@@ -32,6 +32,11 @@ sense.clear()
 
 red = (255, 0, 0)
 green = (0, 255, 0)
+black = (0, 0, 0)
+
+# Define shape of grid of pixels on SenseHat
+nPix_rows = 8
+nPix_cols = 8 
 
 
 class Watchdog():
@@ -75,6 +80,19 @@ class Watchdog():
                 
             else:
                 sense.set_pixel(1, 0, green)
+                
+            # Get % complete for raw file currently being written
+            p = self.acq_obj.get_proportion_complete()
+            nx = int(nPix_cols * p)
+            
+            for x in range(nPix_cols):
+                
+                if x <= nx:
+                    c = green
+                else:
+                    c = black
+                    
+                sense.set_pixel(x, nPix_rows-1, c)
                 
             # Wait for preset time before checking statuses again
             time.sleep(self.refresh_dt)

@@ -140,6 +140,13 @@ class AcquisitionSystem:
         currentFile.close()
         self.nRows += 1
         
+        
+    def get_proportion_complete(self):
+        """
+        Returns the proportion of lines complete, for file currently being written
+        """
+        return self.nRows / self.maxRows
+        
     
     def get_data(self):
         """
