@@ -67,7 +67,7 @@ class Watchdog():
             self.check_preproc_status(verbose=verbose)
                 
             # Get % complete for raw file currently being written
-            
+            self.check_raw_file_status()
                 
             # Wait for preset time before checking statuses again
             time.sleep(self.refresh_dt)
