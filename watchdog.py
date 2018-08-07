@@ -6,6 +6,8 @@ Classes and functions used to implement Watchdog functionality
 @author: rihy
 """
 
+import time
+
 try:
     from sense_hat import SenseHat
 
@@ -34,13 +36,14 @@ green = (0, 255, 0)
 
 class Watchdog():
     
-    def __init__(self,acq_obj,preproc_obj,tick_timeout):
+    def __init__(self,acq_obj,preproc_obj,tick_timeout,refresh_dt=0.1):
         
         print("WTCH:\tWatchdog initialised")
         
         self.acq_obj = acq_obj
         self.preproc_obj = preproc_obj
         self.tick_timeout = tick_timeout
+        self.refresh_dt = refresh_dt
         
         
     def run(self,verbose=True):
@@ -72,6 +75,9 @@ class Watchdog():
                 
             else:
                 sense.set_pixel(1, 0, green)
+                
+            # Wait for preset time before checking statuses again
+            time.sleep(self.refresh_dt)
             
         if verbose:
             print('WTCH:\tThread finished')
