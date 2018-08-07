@@ -138,6 +138,13 @@ class PreProcessor():
         _String_ denoting file currently being pre-processed
         """
         
+        self.running = False
+        """
+        _Boolean_, True within run() method
+        """
+        
+        print("PRE:\tPre-processor initialised")
+        
 
     def init_file_index(self):
         """
@@ -368,6 +375,10 @@ class PreProcessor():
         release this thread.
         """
         
+        if verbose:
+            print("PRE:\tThread started")
+        self.running = True
+        
         start_time = time.time()  
         
         while not tick_timeout.isSet():
@@ -398,6 +409,8 @@ class PreProcessor():
             
         if verbose:
             print('PRE:\tThread finished')
+            
+        self.running = False
         
     
 #%%    

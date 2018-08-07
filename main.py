@@ -7,12 +7,14 @@ Created on Tue Jun 19 16:03:12 2018
 @author: ARIR
 """
 
-from ticker import ticker
 import threading
+import time
 
 # Define classes used in core threads
-import acquisition as acqSys
-import pre_processor as prePro
+import ticker
+import acquisition
+import pre_processor
+import watchdog
 
 import get_data_funcs as dataGetFunc
 from get_data_funcs import RTIMU
@@ -43,7 +45,7 @@ file_length = 3.0                   # in seconds
 fs = 16                             # sampling frequency (Hz)
 timeOut = 15.0                      # timeout duration (secs)
 
-T = 1/fs                            # sampling period (secs)
+dt = 1/fs                            # sampling period (secs)
 maxCacheSize = file_length * fs     # number of data rows per file
 
 
@@ -63,27 +65,32 @@ def do_nothing(xx):
 
 pre_process_func = [[do_nothing],[do_nothing],[do_nothing]]
 
-# Creates an AcquisitionSystem instance
-ASys = acqSys.AcquisitionSystem(sampling_funcs=samplingFunctions,
-                                maxRowsPerFile=maxCacheSize,
-                                channel_names=ch_names)
-
-# Creates a PreProcessor instance
-PrePross = prePro.PreProcessor(pre_process_func,
-                               channel_names=ch_names) 
-
 # Creates events 
 eventGoGetData = threading.Event()
 eventFileReady = threading.Event() 
 event_ticker_timeout = threading.Event()
 
+# Create a Ticker instance
+tick_obj = ticker.Ticker(tick_event=eventGoGetData,
+                         dt=dt, timeout=timeOut,
+                         tick_timeout_event=event_ticker_timeout)
+
+# Creates an AcquisitionSystem instance
+ASys = acquisition.AcquisitionSystem(sampling_funcs=samplingFunctions,
+                                     maxRowsPerFile=maxCacheSize,
+                                     channel_names=ch_names)
+
+# Creates a PreProcessor instance
+PrePross = pre_processor.PreProcessor(pre_process_func,
+                                      channel_names=ch_names) 
+
+# Create a Watchdog instance
+Watchdog = watchdog.Watchdog(ASys,PrePross,event_ticker_timeout)
+
 # Define threads
-ticker_thread = threading.Thread(name= 'ticker', 
-                                 target = ticker, 
-                                 args = (eventGoGetData,), 
-                                 kwargs = {'timeout':timeOut, 
-                                           'T':T, 
-                                           'tick_timeout':event_ticker_timeout})
+ticker_thread = threading.Thread(name= 'Ticker', 
+                                 target = tick_obj.run)
+
 
 Acq_thread = threading.Thread(name = 'Acquisition',
                               target = ASys.run,
@@ -92,16 +99,25 @@ Acq_thread = threading.Thread(name = 'Acquisition',
                                     event_ticker_timeout),
                               kwargs={'verbose':True})
                               
-                               
+                              
 PreProcess_thread = threading.Thread(name = 'Pre-Processor',
                                      target = PrePross.run,
                                      args=(eventFileReady, 
                                            event_ticker_timeout),
                                      kwargs={'verbose':True})
 
+                                     
+Watchdog_thread = threading.Thread(name = 'Watchdog',
+                                   target = Watchdog.run,
+                                   kwargs={'verbose':True})                                     
+
 # Start threads
 ticker_thread.start()
+time.sleep(0.5)
 Acq_thread.start()
+time.sleep(0.5)
 PreProcess_thread.start()
+time.sleep(0.5)
+Watchdog_thread.start()
 
 

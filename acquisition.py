@@ -80,6 +80,11 @@ class AcquisitionSystem:
                                                  for x in self.channels]) + 
                   "\tnChannels:\t%d\n" % self.nChannels + 
                   "\tmaxRows:\t%d" % self.maxRows)
+    
+        self.running = False
+        """
+        _Boolean_, True within run() method
+        """
             
     
     def add_channel(self,channel_obj):
@@ -183,6 +188,9 @@ class AcquisitionSystem:
         
         """
         
+        print("ACQ:\tThread started")
+        self.running = True
+        
         while not tick_timeout.isSet():
             
             self.create_file()
@@ -199,6 +207,7 @@ class AcquisitionSystem:
             file_ready_obj.set()
             
         print('ACQ:\tThread finished')
+        self.running = False
             
     
     
