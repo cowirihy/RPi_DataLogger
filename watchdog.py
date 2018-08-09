@@ -107,7 +107,7 @@ class Watchdog():
             self.check_raw_file_status()
             
             # Check acquisition speed
-            self.check_acq_speed()
+            #self.check_acq_speed()
             
             # Get for user inputs e.g. via joystick
             self.check_user_inputs()

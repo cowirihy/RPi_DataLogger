@@ -119,7 +119,7 @@ class AcquisitionSystem:
         Returns True if file contains missing data rows
         False otherwise
         """
-        if self.missing_data_count>0:
+        if any([ch.missing_data_count>0 for ch in self.channels]):
             return True
         else:
             return False
@@ -195,10 +195,6 @@ class AcquisitionSystem:
             val = self.channels[ch].get_data()
             self.foundData[ch+1] = val
             
-            if val is None:
-                print('ACQ:\tWarning: failed to get data')
-                self.missing_data_count += 1
-            
     
     def file_complete(self,suffix:str='_Completed.csv',verbose=False):
         """
@@ -213,7 +209,7 @@ class AcquisitionSystem:
             print("ACQ:\tFile completed\n\t%s" % new_name)
             
         self.missing_data_count = 0 # reset counter
-        self.max_acq_time = 0.0 # re-initialise
+        
         
         
     def run(self,tick_obj, file_ready_obj, tick_timeout, verbose=True):
@@ -244,15 +240,7 @@ class AcquisitionSystem:
                         
             while self.nRows < self.maxRows:
                 
-                acq_time = time.time() - last_time
-                    
-                if acq_time > self.max_acq_time:
-                    self.max_acq_time = acq_time
-
-                tick_obj.wait()
-                
-                last_time = time.time() # denotes time at start of acq loop
-                
+                tick_obj.wait()                
                 tick_obj.clear()
                 
                 self.get_data()
@@ -296,6 +284,7 @@ class Channel:
         self.index = index
         self.name = name
         self.units = units
+        self.missing_data_count = 0
 
 
     def get_data(self):
@@ -303,7 +292,13 @@ class Channel:
         Returns data acquired using the sampling function defined
         """
         data = self.sampling_func()
+        
+        if data is None:
+                print('ACQ:\tWarning: failed to get data')
+                self.missing_data_count += 1
+                
         data = np.array(data)
+        
         return data  
 
 #%% Helper functions    
