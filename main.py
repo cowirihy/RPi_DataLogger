@@ -42,8 +42,8 @@ samplingFunctions = [lambda :reader.x_accel_take(fetch_new_data = True),
 
 # **** KEY PARAMETERS CONTROLLING DATA ACQUSITION ****
 file_length = 5.0                  # in seconds
-fs = 16                             # sampling frequency (Hz)
-timeOut = 15.0                      # timeout duration (secs)
+fs = 20                             # sampling frequency (Hz)
+timeOut = 16.0                      # timeout duration (secs)
 
 dt = 1/fs                            # sampling period (secs)
 maxCacheSize = file_length * fs     # number of data rows per file
@@ -85,7 +85,7 @@ PrePross = pre_processor.PreProcessor(pre_process_func,
                                       channel_names=ch_names) 
 
 # Create a Watchdog instance
-Watchdog = watchdog.Watchdog(ASys,PrePross,event_ticker_timeout)
+Watchdog = watchdog.Watchdog(ASys,PrePross,tick_obj,event_ticker_timeout)
 
 # Define threads
 ticker_thread = threading.Thread(name= 'Ticker', 

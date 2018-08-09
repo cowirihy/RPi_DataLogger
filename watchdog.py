@@ -39,17 +39,54 @@ black = (  0,   0,   0)
 n_pixel_rows = 8
 n_pixel_cols = 8 
 
+from matplotlib import cm
+
+
+def pixel_bar(val:float,
+              pixel_row:int,
+              good_color=green,
+              bad_color=amber,
+              bad_flag:bool=False):
+    """
+    Displays row of pixels, length of which depends on
+    values provided. Range of x expected [0,1]
+    """
+    
+    val = int(n_pixel_cols * val) # convert to number of lights on pixel grid
+        
+    for i in range(n_pixel_cols):
+        
+        if i <= val:
+            
+            if bad_flag:
+                c = bad_color
+            else:
+                c = good_color
+                            
+        else:
+            c = black
+            
+        sense.set_pixel(i, pixel_row, c)
+
+
 
 class Watchdog():
     
-    def __init__(self,acq_obj,preproc_obj,tick_timeout,refresh_dt=0.1):
+    def __init__(self,acq_obj,preproc_obj,ticker_obj,tick_timeout,refresh_dt=0.1):
         
         print("WTCH:\tWatchdog initialised")
         
         self.acq_obj = acq_obj
         self.preproc_obj = preproc_obj
+        self.ticker_obj = ticker_obj
+        
         self.tick_timeout = tick_timeout
         self.refresh_dt = refresh_dt
+        
+        # Get expected sampling period
+        self.dt = ticker_obj.dt
+        
+        self.cmap = cm.jet  # colormap used for pixels
         
         
     def run(self,verbose=True):
@@ -68,6 +105,9 @@ class Watchdog():
                 
             # Get % complete for raw file currently being written
             self.check_raw_file_status()
+            
+            # Check acquisition speed
+            self.check_acq_speed()
             
             # Get for user inputs e.g. via joystick
             self.check_user_inputs()
@@ -112,26 +152,38 @@ class Watchdog():
         sense.set_pixel(*status_pixel, c)
         
         
+    def check_acq_speed(self,status_pixel=(0,1),verbose=False):
+        """
+        Monitors acquisition speed, checking ratio of time spent acquiring
+        data to required sampling interval
+        """
+        
+        # Calculate acquisiton speed as proportion of expected sampling interval
+        max_time = self.acq_obj.max_acq_time
+        rel_speed = max_time / self.dt
+        
+        if rel_speed > 1.0:
+            print("WTCH:\tError: data acquisition loop too slow!\n"+
+                  "\tMax acq time: %.4s (secs)" % max_time)
+            c = red
+        
+        elif rel_speed > 0.8:
+            c = amber
+            
+        else:
+            c = green
+        
+        sense.set_pixel(*status_pixel, c)
+        
+        
     def check_raw_file_status(self,pixel_row=(n_pixel_rows-1)):
         
         p = self.acq_obj.get_proportion_complete()
-        nx = int(n_pixel_cols * p) # convert to number of lights on pixel grid
         
         missing_data = self.acq_obj.has_missing_data()
         
-        for x in range(n_pixel_cols):
-            
-            if x <= nx:
-                
-                if not missing_data:
-                    c = green
-                else:
-                    c = amber
-                                
-            else:
-                c = black
-                
-            sense.set_pixel(x, pixel_row, c)
+        pixel_bar(p,pixel_row=pixel_row,bad_flag=missing_data)
+
             
             
     def check_user_inputs(self):

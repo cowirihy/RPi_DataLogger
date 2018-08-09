@@ -7,7 +7,7 @@ Classes used to control data acquisiton
 from datetime import datetime
 import numpy as np
 import os
-
+import time
 
 class AcquisitionSystem:
     """
@@ -96,6 +96,12 @@ class AcquisitionSystem:
         """
         _Integer_ counter to denote number of missing data lines in file
         currently being written
+        """
+        
+        self.max_acq_time = 0.0
+        """
+        _Float_, denotes maximum time taken (secs) for any data acquisition loop
+        for last file being written
         """
             
     
@@ -207,6 +213,7 @@ class AcquisitionSystem:
             print("ACQ:\tFile completed\n\t%s" % new_name)
             
         self.missing_data_count = 0 # reset counter
+        self.max_acq_time = 0.0 # re-initialise
         
         
     def run(self,tick_obj, file_ready_obj, tick_timeout, verbose=True):
@@ -233,9 +240,19 @@ class AcquisitionSystem:
             
             self.create_file()
             
+            last_time = time.time() # initialise
+                        
             while self.nRows < self.maxRows:
-        
+                
+                acq_time = time.time() - last_time
+                    
+                if acq_time > self.max_acq_time:
+                    self.max_acq_time = acq_time
+
                 tick_obj.wait()
+                
+                last_time = time.time() # denotes time at start of acq loop
+                
                 tick_obj.clear()
                 
                 self.get_data()
